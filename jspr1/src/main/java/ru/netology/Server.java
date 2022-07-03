@@ -35,16 +35,12 @@ public class Server {
     }
 
     public void start() throws ExecutionException, InterruptedException {
-        Callable<Integer> myCallable = new Callable<Integer>() {
-            @Override
-            public Integer call() throws Exception {
-                return connect();
-            }
-        };
-        final ExecutorService threadPool = Executors.newFixedThreadPool(64);
-        final Future<Integer> task = threadPool.submit(myCallable);
-        final int resultOfTask = task.get();
-        threadPool.shutdown();
+        Runnable waitConnect = () -> connect();
+        while (true){
+            ExecutorService threadPool = Executors.newFixedThreadPool(64);
+            threadPool.submit(waitConnect);
+        }
+
 
     }
 
