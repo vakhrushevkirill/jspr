@@ -1,14 +1,23 @@
 package ru.netology;
 
+import org.apache.http.NameValuePair;
+import org.apache.http.client.utils.URLEncodedUtils;
+
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.ServerSocket;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Scanner;
 import java.util.concurrent.*;
 
 public class Server {
@@ -44,6 +53,10 @@ public class Server {
 
     }
 
+    public List<NameValuePair> getQueryParam(String path) throws URISyntaxException {
+        return URLEncodedUtils.parse(new URI(path), Charset.forName("UTF-8"));
+    }
+
     public int connect(){
         try (
                 final var socket = serverSocket.accept();
@@ -53,14 +66,36 @@ public class Server {
             // read only request line for simplicity
             // must be in form GET /path HTTP/1.1
             final var requestLine = in.readLine();
+            System.out.println(requestLine);
+
+
+//            for (var res:
+//                 result) {
+//                System.out.println(res.getValue());
+//            }
+
+
             final var parts = requestLine.split(" ");
+
+
 
             if (parts.length != 3) {
                 // just close socket
                 return 0;
             }
 
-            final var path = parts[1];
+            var path = parts[1];
+
+            for (var res:
+                 this.getQueryParam(path)) {
+                System.out.println(res.getValue());
+            }
+
+            if (path.contains("?")){
+                path = path.split("\\?")[0];
+            }
+
+
             if (!validPaths.contains(path)) {
                 out.write((
                         "HTTP/1.1 404 Not Found\r\n" +
@@ -104,7 +139,7 @@ public class Server {
             ).getBytes());
             Files.copy(filePath, out);
             out.flush();
-        } catch (IOException e) {
+        } catch (IOException | URISyntaxException e) {
             e.printStackTrace();
         }
         return 1;
