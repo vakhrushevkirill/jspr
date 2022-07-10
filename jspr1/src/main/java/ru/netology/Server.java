@@ -1,14 +1,24 @@
 package ru.netology;
 
+import org.apache.http.NameValuePair;
+import org.apache.http.client.utils.URLEncodedUtils;
+
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Scanner;
 import java.util.concurrent.*;
 
 public class Server {
@@ -34,23 +44,21 @@ public class Server {
 
     }
 
-    public void start() throws ExecutionException, InterruptedException {
-        Callable<Integer> myCallable = new Callable<Integer>() {
-            @Override
-            public Integer call() throws Exception {
-                return connect();
-            }
-        };
-        final ExecutorService threadPool = Executors.newFixedThreadPool(64);
-        final Future<Integer> task = threadPool.submit(myCallable);
-        final int resultOfTask = task.get();
-        threadPool.shutdown();
+    public void start() throws ExecutionException, InterruptedException, IOException {
+
+        ExecutorService threadPool = Executors.newFixedThreadPool(64);
+        while (true){
+            final var socket = serverSocket.accept();
+            Runnable waitConnect = () -> connect(socket);
+            threadPool.submit(waitConnect);
+            System.out.println(1);
+        }
+
 
     }
 
-    public int connect(){
+    public int connect(Socket socket){
         try (
-                final var socket = serverSocket.accept();
                 final var in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 final var out = new BufferedOutputStream(socket.getOutputStream());
         ) {
@@ -58,13 +66,12 @@ public class Server {
             // must be in form GET /path HTTP/1.1
             final var requestLine = in.readLine();
             final var parts = requestLine.split(" ");
-
             if (parts.length != 3) {
                 // just close socket
                 return 0;
             }
 
-            final var path = parts[1];
+            var path = parts[1];
             if (!validPaths.contains(path)) {
                 out.write((
                         "HTTP/1.1 404 Not Found\r\n" +
