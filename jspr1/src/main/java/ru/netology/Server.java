@@ -8,6 +8,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.ServerSocket;
+import java.net.Socket;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
@@ -43,10 +44,11 @@ public class Server {
 
     }
 
-    public void start() throws ExecutionException, InterruptedException {
-        Runnable waitConnect = () -> connect();
+    public void start() throws ExecutionException, InterruptedException, IOException {
+        ExecutorService threadPool = Executors.newFixedThreadPool(64);
         while (true){
-            ExecutorService threadPool = Executors.newFixedThreadPool(64);
+            final var socket = serverSocket.accept();
+            Runnable waitConnect = () -> connect(socket);
             threadPool.submit(waitConnect);
         }
 
@@ -57,9 +59,8 @@ public class Server {
         return URLEncodedUtils.parse(new URI(path), Charset.forName("UTF-8"));
     }
 
-    public int connect(){
+    public int connect(Socket socket){
         try (
-                final var socket = serverSocket.accept();
                 final var in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 final var out = new BufferedOutputStream(socket.getOutputStream());
         ) {
@@ -67,13 +68,6 @@ public class Server {
             // must be in form GET /path HTTP/1.1
             final var requestLine = in.readLine();
             System.out.println(requestLine);
-
-
-//            for (var res:
-//                 result) {
-//                System.out.println(res.getValue());
-//            }
-
 
             final var parts = requestLine.split(" ");
 
