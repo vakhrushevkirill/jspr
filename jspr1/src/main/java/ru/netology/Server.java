@@ -59,7 +59,7 @@ public class Server {
         return URLEncodedUtils.parse(new URI(path), Charset.forName("UTF-8"));
     }
 
-    public int connect(Socket socket){
+    public void connect(Socket socket){
         try (
                 final var in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 final var out = new BufferedOutputStream(socket.getOutputStream());
@@ -75,7 +75,6 @@ public class Server {
 
             if (parts.length != 3) {
                 // just close socket
-                return 0;
             }
 
             var path = parts[1];
@@ -98,7 +97,6 @@ public class Server {
                                 "\r\n"
                 ).getBytes());
                 out.flush();
-                return 0;
             }
 
             final var filePath = Path.of(".", "public", path);
@@ -120,7 +118,6 @@ public class Server {
                 ).getBytes());
                 out.write(content);
                 out.flush();
-                return 0;
             }
 
             final var length = Files.size(filePath);
@@ -136,7 +133,6 @@ public class Server {
         } catch (IOException | URISyntaxException e) {
             e.printStackTrace();
         }
-        return 1;
     }
 }
 
